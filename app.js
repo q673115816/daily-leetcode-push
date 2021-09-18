@@ -1,0 +1,43 @@
+const https = require('https')
+const axios = require('axios')
+const queryToday = require('./queryToday')
+const queryproblem = require('./queryproblem')
+const TurndownService = require('turndown')
+const turndownService = new TurndownService
+const hostname = 'https://oapi.dingtalk.com'
+const path = '/robot/send?access_token=7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
+const webhook = `${hostname}${path}`
+const content = '维护宇宙和平，是我们警备队义不容辞的责任'
+
+const text = JSON.stringify({
+    "at": {
+        "atMobiles": [
+        ],
+        "atUserIds": [
+        ],
+        "isAtAll": true
+    },
+    "text": {
+        "content": content
+    },
+    "msgtype": "text"
+})
+
+const actionCard = ({titleSlug, title, text}) => ({
+    "msgtype": "actionCard",
+    "actionCard": {
+        title,
+        text,
+        singleTitle: '阅读全文',
+        singleURL: `https://leetcode-cn.com/problems/${titleSlug}`
+    }
+})
+
+;(async () => {
+    const titleSlug = await queryToday()
+    const { translatedTitle: title, translatedContent: text} = await queryproblem(titleSlug)
+    const markdown = turndownService.turndown(text)
+    const message = actionCard({ titleSlug, title, text: markdown})
+    console.log(message);
+    axios.post(webhook, message)
+})()
