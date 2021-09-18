@@ -4,12 +4,13 @@ const queryToday = require('./queryToday')
 const queryproblem = require('./queryproblem')
 const TurndownService = require('turndown')
 const turndownService = new TurndownService
+const schedule = require('node-schedule')
 const hostname = 'https://oapi.dingtalk.com'
 const path = '/robot/send?access_token=7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
 const webhook = `${hostname}${path}`
-const content = '维护宇宙和平，是我们警备队义不容辞的责任'
+const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
 
-const text = JSON.stringify({
+const text = (content) => ({
     "at": {
         "atMobiles": [
         ],
@@ -18,7 +19,7 @@ const text = JSON.stringify({
         "isAtAll": true
     },
     "text": {
-        "content": content
+        content
     },
     "msgtype": "text"
 })
@@ -33,11 +34,35 @@ const actionCard = ({titleSlug, title, text}) => ({
     }
 })
 
-;(async () => {
-    const titleSlug = await queryToday()
-    const { translatedTitle: title, translatedContent: text} = await queryproblem(titleSlug)
-    const markdown = turndownService.turndown(text)
-    const message = actionCard({ titleSlug, title, text: markdown})
-    console.log(message);
+function initJob() {
+    const message = text(content)
     axios.post(webhook, message)
-})()
+    schedule.scheduleJob({ hour: 10 }, pushDaily)
+    schedule.scheduleJob({ hour: 9 }, workTrigger)
+    schedule.scheduleJob({ hour: 18 }, workTrigger)
+}
+
+// initJob()
+
+async function getRandomText() {
+    const {data} = await axios.get('https://v1.hitokoto.cn/')
+    return data
+}
+
+async function pushDaily() {
+    const titleSlug = await queryToday()
+    const { translatedTitle: title, translatedContent: text } = await queryproblem(titleSlug)
+    const markdown = turndownService.turndown(text)
+    const message = actionCard({ titleSlug, title, text: markdown })
+    axios.post(webhook, message)
+}
+
+function workTrigger() {
+    const { hitokoto, from, from_who } = await getRandomText()
+    const message = text(`
+    ${hitokoto}
+            ——<${from}>${from_who}
+    `)
+    axios.post(webhook, message)
+}
+
