@@ -1,13 +1,14 @@
-const https = require('https')
 const axios = require('axios')
-const queryToday = require('./queryToday')
-const queryproblem = require('./queryproblem')
-const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const TurndownService = require('turndown')
 const turndownService = new TurndownService
 require('dotenv').config()
 const schedule = require('node-schedule')
+const queryToday = require('./queryToday')
+const queryproblem = require('./queryproblem')
+const {text, actionCard} = require('./dingMessage')
+
+
 const hostname = 'https://oapi.dingtalk.com'
 const access_token = '7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
 const path = '/robot/send?access_token=7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
@@ -16,36 +17,14 @@ const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
 function createWebhook({timestamp, sign}) {
     return `${hostname}${path}&timestamp=${timestamp}&sign=${sign}`
 }
-const text = (content) => ({
-    "at": {
-        "atMobiles": [
-        ],
-        "atUserIds": [
-        ],
-        "isAtAll": true
-    },
-    "text": {
-        content
-    },
-    "msgtype": "text"
-})
 
-const actionCard = ({ titleSlug, title, text }) => ({
-    "msgtype": "actionCard",
-    "actionCard": {
-        title,
-        text,
-        singleTitle: '阅读全文',
-        singleURL: `https://leetcode-cn.com/problems/${titleSlug}`
-    }
-})
-
-function initJob() {
+async function initJob() {
     const message = text(content)
-    axios.post(webhook, message)
-    // schedule.scheduleJob({ hour: 10 }, pushDaily)
-    // schedule.scheduleJob({ hour: 9 }, workTrigger)
-    // schedule.scheduleJob({ hour: 18 }, workTrigger)
+    const res = await axios.post(webhook, message)
+    console.log(res);
+    schedule.scheduleJob({ hour: 10 }, pushDaily)
+    schedule.scheduleJob({ hour: 9 }, workTrigger)
+    schedule.scheduleJob({ hour: 18 }, workTrigger)
 }
 
 initJob()
@@ -86,7 +65,6 @@ function signFor(secret, content) {
     const str = crypto
         .createHmac('sha256', secret)
         .update(content)
-        .digest()
-        .toString('base64');
+        .digest('base64')
     return encodeURIComponent(str);
 }
