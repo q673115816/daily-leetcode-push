@@ -6,7 +6,7 @@ require('dotenv').config()
 const schedule = require('node-schedule')
 const queryToday = require('./queryToday')
 const queryproblem = require('./queryproblem')
-const {text, actionCard} = require('./dingMessage')
+const { text, actionCard } = require('./dingMessage')
 
 
 const hostname = 'https://oapi.dingtalk.com'
@@ -14,14 +14,12 @@ const access_token = '7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b6
 const path = '/robot/send?access_token=7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
 const webhook = createWebhook(createSign())
 const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
-function createWebhook({timestamp, sign}) {
+function createWebhook({ timestamp, sign }) {
     return `${hostname}${path}&timestamp=${timestamp}&sign=${sign}`
 }
 
 async function initJob() {
-    const message = text(content)
-    const res = await axios.post(webhook, message)
-    console.log(res);
+    await workTrigger()
     schedule.scheduleJob({ hour: 10 }, pushDaily)
     schedule.scheduleJob({ hour: 9 }, workTrigger)
     schedule.scheduleJob({ hour: 18 }, workTrigger)
@@ -36,7 +34,10 @@ async function getRandomText() {
 
 async function pushDaily() {
     const titleSlug = await queryToday()
-    const { translatedTitle: title, translatedContent: text } = await queryproblem(titleSlug)
+    const {
+        translatedTitle: title,
+        translatedContent: text } =
+        await queryproblem(titleSlug)
     const markdown = turndownService.turndown(text)
     const message = actionCard({ titleSlug, title, text: markdown })
     axios.post(webhook, message)
