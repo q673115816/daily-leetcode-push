@@ -42,7 +42,7 @@ function initJob() {
     schedule.scheduleJob({ hour: 18 }, workTrigger)
 }
 
-// initJob()
+initJob()
 
 async function getRandomText() {
     const {data} = await axios.get('https://v1.hitokoto.cn/')
