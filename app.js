@@ -1,3 +1,4 @@
+const http = require('http')
 const axios = require('axios')
 const crypto = require('crypto')
 const TurndownService = require('turndown')
@@ -18,11 +19,13 @@ function createWebhook({ timestamp, sign }) {
     return `${hostname}${path}&timestamp=${timestamp}&sign=${sign}`
 }
 
+let data = null
+
 async function initJob() {
     await workTrigger()
-    schedule.scheduleJob({ hour: 10 }, pushDaily)
-    schedule.scheduleJob({ hour: 9 }, workTrigger)
-    schedule.scheduleJob({ hour: 18 }, workTrigger)
+    schedule.scheduleJob('0 0 10 * * *', pushDaily)
+    schedule.scheduleJob('0 0 9 * * *', workTrigger)
+    schedule.scheduleJob('0 0 18 * * *', workTrigger)
 }
 
 initJob()
@@ -40,7 +43,7 @@ async function pushDaily() {
         await queryproblem(titleSlug)
     const markdown = turndownService.turndown(text)
     const message = actionCard({ titleSlug, title, text: markdown })
-    axios.post(webhook, message)
+    data = await axios.post(webhook, message)
 }
 
 async function workTrigger() {
@@ -49,7 +52,7 @@ async function workTrigger() {
     ${hitokoto}
             ——<${from}>${from_who}
     `)
-    axios.post(webhook, message)
+    data = await axios.post(webhook, message)
 }
 
 function createSign() {
@@ -69,3 +72,8 @@ function signFor(secret, content) {
         .digest('base64')
     return encodeURIComponent(str);
 }
+
+http.createServer((req, res) => {
+    if(req === '/') 
+        res.end(JSON.stringify(data || {}))
+})
