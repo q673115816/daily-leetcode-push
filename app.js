@@ -73,7 +73,11 @@ function signFor(secret, content) {
     return encodeURIComponent(str);
 }
 
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
     if(req === '/') 
         res.end(JSON.stringify(data || {}))
 })
+
+server.listen(1234)
+
+module.exports = server
