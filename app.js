@@ -1,4 +1,5 @@
 const http = require('http')
+const path = require('path')
 const axios = require('axios')
 const express = require('express')
 const crypto = require('crypto')
@@ -8,13 +9,23 @@ require('dotenv').config()
 const queryToday = require('./queryToday')
 const queryproblem = require('./queryproblem')
 const { text, actionCard } = require('./dingMessage')
+
+
+const hostname = 'https://oapi.dingtalk.com'
+const access_token = '7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
+const path = '/robot/send?access_token=7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
+const webhook = createWebhook(createSign())
+const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
+
 const secret = process.env.DING_TOKEN
 const app = express()
+const PORT = process.env.PORT || 3000
 app
     .use(require('cors')())
     .use(require('helmet')())
     .use(express.urlencoded({ extended: true }))
     .use(express.json({ type: 'application/json' }))
+    .use(express.static(path.join(__dirname, 'public')))
 
 function checkSecret(req, res, next) {
     const { Authorization } = req.headers
@@ -28,11 +39,9 @@ function checkSecret(req, res, next) {
 app.post('/work', checkSecret, workTrigger)
 app.post('/daily', checkSecret, pushDaily)
 
-const hostname = 'https://oapi.dingtalk.com'
-const access_token = '7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
-const path = '/robot/send?access_token=7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
-const webhook = createWebhook(createSign())
-const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
+const server = http.createServer(app)
+server.listen(PORT)
+
 function createWebhook({ timestamp, sign }) {
     return `${hostname}${path}&timestamp=${timestamp}&sign=${sign}`
 }
@@ -79,3 +88,5 @@ function signFor(secret, content) {
         .digest('base64')
     return encodeURIComponent(str);
 }
+
+module.exports = server
