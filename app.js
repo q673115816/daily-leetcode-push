@@ -1,14 +1,32 @@
 const http = require('http')
 const axios = require('axios')
+const express = require('express')
 const crypto = require('crypto')
 const TurndownService = require('turndown')
 const turndownService = new TurndownService
 require('dotenv').config()
-const schedule = require('node-schedule')
 const queryToday = require('./queryToday')
 const queryproblem = require('./queryproblem')
 const { text, actionCard } = require('./dingMessage')
+const secret = process.env.DING_TOKEN
+const app = express()
+app
+    .use(require('cors')())
+    .use(require('helmet')())
+    .use(express.urlencoded({ extended: true }))
+    .use(express.json({ type: 'application/json' }))
 
+function checkSecret(req, res, next) {
+    const { Authorization } = req.headers
+    if (Authorization.slice(7) === secret) return next()
+    res.json({
+        code: 403,
+        message: 'Authorization Error'
+    }).status(403)
+}
+
+app.post('/work', checkSecret, workTrigger)
+app.post('/daily', checkSecret, pushDaily)
 
 const hostname = 'https://oapi.dingtalk.com'
 const access_token = '7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
@@ -18,15 +36,6 @@ const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
 function createWebhook({ timestamp, sign }) {
     return `${hostname}${path}&timestamp=${timestamp}&sign=${sign}`
 }
-
-async function initJob() {
-    await workTrigger()
-    // schedule.scheduleJob('0 0 10 * * *', pushDaily)
-    // schedule.scheduleJob('0 0 9 * * *', workTrigger)
-    // schedule.scheduleJob('0 0 18 * * *', workTrigger)
-}
-
-initJob()
 
 async function getRandomText() {
     const { data } = await axios.get('https://v1.hitokoto.cn/')
@@ -55,7 +64,7 @@ async function workTrigger() {
 
 function createSign() {
     const timestamp = new Date().getTime()
-    const secret = process.env.DING_TOKEN
+
     const sign = signFor(secret, `${timestamp}\n${secret}`)
     return {
         sign,
