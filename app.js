@@ -37,9 +37,9 @@ function checkSecret(req, res, next) {
 
 app.post('/work', checkSecret, workTrigger)
 app.post('/daily', checkSecret, pushDaily)
-app.get('/secret', (req, res) => {
-    res.send(secret)
-})
+// app.get('/secret', (req, res) => {
+//     res.send(secret)
+// })
 const server = http.createServer(app)
 
 server.listen(PORT)
