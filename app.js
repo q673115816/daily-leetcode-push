@@ -11,15 +11,13 @@ const queryproblem = require('./queryproblem')
 const { text, actionCard } = require('./dingMessage')
 
 
-const hostname = 'https://oapi.dingtalk.com'
-const access_token = '7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
-const path = '/robot/send?access_token=7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
-const webhook = createWebhook(createSign())
-const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
-
 const secret = process.env.DING_TOKEN
 const app = express()
 const PORT = process.env.PORT || 3000
+const access_token = '7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
+const webhook = createWebhook(createSign())
+const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
+
 app
     .use(require('cors')())
     .use(require('helmet')())
@@ -28,8 +26,9 @@ app
     .use(express.static(path.join(__dirname, 'public')))
 
 function checkSecret(req, res, next) {
-    const { Authorization } = req.headers
-    if (Authorization.slice(7) === secret) return next()
+    const { authorization } = req.headers
+    console.log(authorization);
+    if (authorization.slice(7) === secret) return next()
     res.json({
         code: 403,
         message: 'Authorization Error'
@@ -43,7 +42,7 @@ const server = http.createServer(app)
 server.listen(PORT)
 
 function createWebhook({ timestamp, sign }) {
-    return `${hostname}${path}&timestamp=${timestamp}&sign=${sign}`
+    return `https://oapi.dingtalk.com/robot/send?access_token=${access_token}&timestamp=${timestamp}&sign=${sign}`
 }
 
 async function getRandomText() {
