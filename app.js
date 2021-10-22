@@ -17,7 +17,11 @@ const PORT = process.env.PORT || 3000
 const access_token = '7b357929ac3f5950a3bbc2483b467a5dd6b8476b6e1593097d336204b625475a'
 const webhook = createWebhook(createSign())
 const content = '灯光下也会有阴影，邪恶一直存在于我们身边'
-
+const WEATHER = 'https://api.open-meteo.com/v1/forecast'
+const LOCATION = {
+    SHANGHAI: { latitude: 35.6785, longitude: 139.6823 },
+    HANGZHOU: { latitude: 30.319, longitude: 120.165 },
+}
 app
     .use(require('cors')())
     .use(require('helmet')())
@@ -35,8 +39,11 @@ function checkSecret(req, res, next) {
     }).status(403)
 }
 
-app.post('/work', checkSecret, workTrigger)
-app.post('/daily', checkSecret, pushDaily)
+app.all('*', checkSecret, (req, res, next) => next())
+
+app.post('/work', workTrigger)
+app.post('/daily', pushDaily)
+app.post('/weather', routerweather)
 // app.get('/secret', (req, res) => {
 //     res.send(secret)
 // })
@@ -53,7 +60,7 @@ async function getRandomText() {
     return data
 }
 
-async function pushDaily() {
+async function pushDaily(req, res) {
     const titleSlug = await queryToday()
     const {
         translatedTitle: title,
@@ -62,15 +69,53 @@ async function pushDaily() {
     const markdown = turndownService.turndown(text)
     const message = actionCard({ titleSlug, title, text: markdown })
     await axios.post(webhook, message)
+    res.status(200).end()
 }
 
-async function workTrigger() {
+async function workTrigger(req, res) {
     const { hitokoto, from, from_who } = await getRandomText()
     const message = text(`
     ${hitokoto}
             ——<${from}>${from_who}
     `)
     await axios.post(webhook, message)
+    res.status(200).end()
+}
+/**
+ * 
+ * @param {object} location - 地址信息
+ * @param {string} location.latitude - 维度
+ * @param {string} location.longitude - 经度
+ */
+async function getweather(location) {
+    // https://api.open-meteo.com/v1/forecast?latitude=35.6785&longitude=139.6823&hourly=temperature_2m
+    const url = new URL(WEATHER)
+    location.hourly = 'temperature_2m'
+    location.current_weather = true
+    for (const key in location) {
+        url.searchParams.set(key, location[key])
+    }
+    const { data } = await axios.get(url.toString())
+    console.log(data);
+    return data
+}
+
+async function routerweather(req, res) {
+    const data = await getweather(LOCATION.HANGZHOU)
+    const currDaily = data.hourly.temperature_2m.slice(0, 24)
+    const min = Math.min(...currDaily)
+    const max = Math.max(...currDaily)
+    const { current_weather } = data
+    const message = text(`
+        杭州天气
+        最高温：${max}℃
+        最低温：${min}℃
+        温度：${current_weather.temperature}℃
+        风速：${current_weather.windspeed}
+        风向：${current_weather.winddirection}
+    `)
+    await axios.post(webhook, message)
+    res.status(200).end()
 }
 
 function createSign() {
