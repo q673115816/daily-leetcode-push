@@ -7,6 +7,7 @@ const TurndownService = require('turndown')
 const turndownService = new TurndownService
 require('dotenv').config()
 const queryToday = require('./queryToday')
+const bingToday = require('./bingToday')
 const queryproblem = require('./queryproblem')
 const { text, actionCard } = require('./dingMessage')
 
@@ -44,6 +45,7 @@ app.all('*', checkSecret, (req, res, next) => next())
 app.post('/work', workTrigger)
 app.post('/daily', pushDaily)
 app.post('/weather', routerweather)
+app.post('/bing', bingImage)
 // app.get('/secret', (req, res) => {
 //     res.send(secret)
 // })
@@ -66,8 +68,18 @@ async function pushDaily(req, res) {
         translatedTitle: title,
         translatedContent: text } =
         await queryproblem(titleSlug)
-    const markdown = turndownService.turndown(text)
-    const message = actionCard({ titleSlug, title, text: markdown })
+    const message = actionCard({
+        singleURL: `https://leetcode-cn.com/problems/${titleSlug}`,
+        title,
+        text: turndownService.turndown(text)
+    })
+    await axios.post(webhook, message)
+    res.status(200).end()
+}
+
+async function bingImage(req, res) {
+    const bingData = await bingToday()
+    const message = actionCard(bingData)
     await axios.post(webhook, message)
     res.status(200).end()
 }
