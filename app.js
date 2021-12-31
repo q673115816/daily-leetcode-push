@@ -33,19 +33,21 @@ app
 function checkSecret(req, res, next) {
     const { authorization } = req.headers
     console.log(authorization);
-    if (authorization.slice(7) === secret) return next()
-    res.json({
-        code: 403,
-        message: 'Authorization Error'
-    }).status(403)
+    if (!authorization || authorization.slice(7) === secret) {
+         return res.json({
+            code: 403,
+            message: 'Authorization Error'
+        }).status(403)
+    } else return next()
 }
 
 app.all('*', checkSecret, (req, res, next) => next())
 
 app.post('/work', workTrigger)
-app.post('/daily', pushDaily)
+app.post('/leetcode', leetcodeDaily)
 app.post('/weather', routerweather)
 app.post('/bing', bingImage)
+app.post('/message', message)
 // app.get('/secret', (req, res) => {
 //     res.send(secret)
 // })
@@ -62,16 +64,22 @@ async function getRandomText() {
     return data
 }
 
-async function pushDaily(req, res) {
+async function message(req, res) {
+    await axios.post(webhook, text(req.body.msg))
+    res.status(200).end()
+}
+
+async function leetcodeDaily(req, res) {
     const titleSlug = await queryToday()
     const {
         translatedTitle: title,
         translatedContent: text } =
         await queryproblem(titleSlug)
+    const mkdown = turndownService.turndown(text)
     const message = actionCard({
         singleURL: `https://leetcode-cn.com/problems/${titleSlug}`,
         title,
-        text: turndownService.turndown(text)
+        text: mkdown
     })
     await axios.post(webhook, message)
     res.status(200).end()
@@ -79,7 +87,7 @@ async function pushDaily(req, res) {
 
 async function bingImage(req, res) {
     const bingData = await bingToday()
-    const message = actionCard(bingData)
+    const message = actionCard({ ...bingData, singleURL: 'https://cn.bing.com'})
     await axios.post(webhook, message)
     res.status(200).end()
 }

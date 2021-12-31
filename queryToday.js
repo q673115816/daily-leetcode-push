@@ -1,4 +1,5 @@
 const axios = require('axios')
+const util = require('util')
 const config = require('./config')
 
 const key = 'titleSlug'
@@ -17,8 +18,8 @@ const query = `
 const params = { query, variables: {}, operationName: "questionOfToday" }
 
 const queryToday = async () => {
-    const { data } = await axios.post(config.host.leetcode, params)
-    return data.data.todayRecord[0].question[key]
+  const { data } = await axios.post(config.host.leetcode, params)
+  return data.data.todayRecord[0].question[key]
 }
 
 module.exports = queryToday

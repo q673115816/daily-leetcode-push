@@ -9,5 +9,5 @@ jobs:
       - name: Call our API route
         run: |
           curl --request POST \
-          --url 'https://daily-leetcode-push.vercel.app/daily' \
+          --url 'https://daily-leetcode-push.vercel.app/leetcode' \
           --header 'Authorization: Bearer ${{ secrets.DING_TOKEN }}'

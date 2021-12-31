@@ -1,6 +1,6 @@
 const axios = require('axios')
 const queryToday = require('./queryToday')
-const { host } = require('./config')
+const config = require('./config')
 
 const query = `
 query questionData($titleSlug: String!) {
@@ -21,7 +21,7 @@ const parmas = (titleSlug) => ({
 })
 
 const queryProblem = async (titleSlug) => {
-    const { data } = await axios.post(host, parmas(titleSlug))
+  const { data } = await axios.post(config.host.leetcode, parmas(titleSlug))
     return data.data.question
 }
 
