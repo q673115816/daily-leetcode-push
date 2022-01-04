@@ -32,8 +32,7 @@ app
 
 function checkSecret(req, res, next) {
     const { authorization } = req.headers
-    console.log(authorization);
-    if (!authorization || authorization.slice(7) === secret) {
+    if (!authorization || authorization.slice(7) !== secret) {
          return res.json({
             code: 403,
             message: 'Authorization Error'
