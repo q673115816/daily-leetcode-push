@@ -40,7 +40,7 @@ function checkSecret(req, res, next) {
     } else return next()
 }
 
-app.all('*', checkSecret, (req, res, next) => next())
+app.all('*', checkSecret)
 
 app.post('/work', workTrigger)
 app.post('/leetcode', leetcodeDaily)
